@@ -2,12 +2,6 @@
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
-
-function Run-Test {
-    for ($i = 0; $i -le 100; $i++) {
-        Start-Sleep -Milliseconds 20
-    } 
-}
 function Create-Form {
     param(
         [hashtable] $ObjectDimensions = @{ Width=1024; Height=768 },
@@ -71,30 +65,32 @@ function Create-PictureBox {
     return $pictureBox
 }
 
+function Run-Test {
+    for ($i = 0; $i -le 100; $i++) {
+        Run-ProgressBar -progressBar $progressBar -textBox $textBox -currentStep $i
+        Run-Spinner -spinnerLabel $spinnerLabel -textBox $textBox -currentStep $i
+        Start-Sleep -Milliseconds 20
+    } 
+}
+function Run-Test2 {
+    for ($i = 0; $i -le 100; $i++) {
+        Run-ProgressBar -progressBar $progressBar -textBox $textBox -currentStep $i
+        Run-Spinner -spinnerLabel $spinnerLabel -textBox $textBox -currentStep $i
+        Start-Sleep -Milliseconds 20
+    } 
+}
+
 function Create-Button {
     param(
         [hashtable] $ObjectDimensions = @{ Width=100; Height=20 },
         [PSCustomObject]$CurrentLocation = @{ X=100; Y=35 },
         [System.Windows.Forms.Form]$Form,
-        [string]$Text = "Click me",
-        $AddClick
+        [string]$Text = "Click me"
     )
     $button = New-Object System.Windows.Forms.Button
     $button.Location = New-Object System.Drawing.Point($CurrentLocation.X, $CurrentLocation.Y)
     $button.Size = New-Object System.Drawing.Size($ObjectDimensions.Width, $ObjectDimensions.Height)
     $button.Text = $Text
-    
-    $button.Add_Click({
-        Run-UIIndicators -textBox $textBox -spinnerLabel $spinnerLabel -progressBar $progressBar -overallProgressBar $overallProgressBar
-        $job = Start-Job -ScriptBlock {
-            $AddClick
-        }
-        Wait-Job $job
-        $results = Receive-Job $job
-        Remove-Job $job
-        $button.Enabled = $false
-    })
-
     $CurrentLocation.X = 10
     $CurrentLocation.Y += $ObjectDimensions.Height
     
@@ -119,26 +115,11 @@ function Run-ProgressBar {
     $progressBar.Value = $currentStep
 }
 
-function Run-UIIndicators {
-    param (
-        $spinnerLabel,
-        $textBox,
-        $progressBar,
-        $overallProgressBar
-    )
-    $progressBar.Value = 0
-    for ($i = 0; $i -le 100; $i++) {
-        Run-ProgressBar -progressBar $progressBar -textBox $textBox -currentStep $i
-        Run-Spinner -spinnerLabel $spinnerLabel -textBox $textBox -currentStep $i
-        Start-Sleep -Milliseconds 20
-    }
-    $overallProgressBar.Value += 10
-}
-
 $location = New-Object -TypeName psobject -Property @{ X=10; Y=10 }
 # Create form and controls
 $form = Create-Form -CurrentLocation $location
-$button = Create-Button -CurrentLocation $location -Text "Sanity Check" -AddClick Run-Test
+$firstButton = Create-Button -CurrentLocation $location -Text "Button1"
+$secondButton = Create-Button -CurrentLocation $location -Text "Button2"
 $overallProgressBar = Create-Control -ControlType "ProgressBar" -CurrentLocation $location -Form $form
 $progressBar = Create-Control -ControlType "ProgressBar" -CurrentLocation $location -Form $form
 $textBox = Create-Control -ControlType "TextBox" -CurrentLocation $location -Form $form
@@ -147,8 +128,23 @@ $location.X = $form.Width
 $location.Y = $form.Height
 $pictureBox = Create-PictureBox -CurrentLocation $location
 
+#now we add the commands for the buttons
+$firstButton.Add_Click({
+    $progressBar.Value = 0
+    Run-Test
+    $overallProgressBar.Value += 10
+    $this.Enabled = $false
+}) 
+$secondButton.Add_Click({
+    $progressBar.Value = 0
+    Run-Test2
+    $overallProgressBar.Value += 10
+    $this.Enabled = $false
+}) 
+
 # Add controls to form
-$form.Controls.Add($button)
+$form.Controls.Add($firstButton)
+$form.Controls.Add($secondButton)
 $form.Controls.Add($overallProgressBar)
 $form.Controls.Add($progressBar)
 $form.Controls.Add($textBox)
