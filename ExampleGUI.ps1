@@ -2,6 +2,12 @@
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
+
+function Run-Test {
+    for ($i = 0; $i -le 100; $i++) {
+        Start-Sleep -Milliseconds 20
+    } 
+}
 function Create-Form {
     param(
         [hashtable] $ObjectDimensions = @{ Width=1024; Height=768 },
@@ -15,52 +21,32 @@ function Create-Form {
     return $form
 }
 
-function Create-ProgressBar {
+function Create-Control {
     param(
         [hashtable] $ObjectDimensions = @{ Width=200; Height=20 },
         [PSCustomObject]$CurrentLocation = @{ X=50; Y=70 },
         [System.Windows.Forms.Form]$Form,
-        [string]$Text
-    )
-    $progressBar = New-Object System.Windows.Forms.ProgressBar
-    $progressBar.Location = New-Object System.Drawing.Point($CurrentLocation.X, $CurrentLocation.Y)
-    $progressBar.Size = New-Object System.Drawing.Size($ObjectDimensions.Width, $ObjectDimensions.Height)
-    $CurrentLocation.X = 10
-    $CurrentLocation.Y += $ObjectDimensions.Height
-
-    return $progressBar
-}
-
-function Create-TextBox {
-    param(
-        [hashtable] $ObjectDimensions = @{ Width=200; Height=20 },
-        [PSCustomObject]$CurrentLocation = @{ X=50; Y=100 },
-        [System.Windows.Forms.Form]$Form
-    )
-    $textBox = New-Object System.Windows.Forms.TextBox
-    $textBox.Location = New-Object System.Drawing.Point($CurrentLocation.X, $CurrentLocation.Y)
-    $textBox.Size = New-Object System.Drawing.Size($ObjectDimensions.Width, $ObjectDimensions.Height)
-    $CurrentLocation.X = 10
-    $CurrentLocation.Y += $ObjectDimensions.Height
-    
-    return $textBox
-}
-
-function Create-SpinnerLabel {
-    param(
-        [hashtable] $ObjectDimensions = @{ Width=200; Height=20 },
-        [PSCustomObject]$CurrentLocation = @{ X=50; Y=130 },
-        [System.Windows.Forms.Form]$Form,
+        [string]$ControlType,
         [string]$Text = ""
     )
-    $spinnerLabel = New-Object System.Windows.Forms.Label
-    $spinnerLabel.Location = New-Object System.Drawing.Point($CurrentLocation.X, $CurrentLocation.Y)
-    $spinnerLabel.Size = New-Object System.Drawing.Size($ObjectDimensions.Width, $ObjectDimensions.Height)
-    $spinnerLabel.Text = $Text
+    switch ($ControlType) {
+        "ProgressBar" {
+            $control = New-Object System.Windows.Forms.ProgressBar
+        }
+        "TextBox" {
+            $control = New-Object System.Windows.Forms.TextBox
+        }
+        "SpinnerLabel" {
+            $control = New-Object System.Windows.Forms.Label
+            $control.Text = $Text
+        }
+    }
+    $control.Location = New-Object System.Drawing.Point($CurrentLocation.X, $CurrentLocation.Y)
+    $control.Size = New-Object System.Drawing.Size($ObjectDimensions.Width, $ObjectDimensions.Height)
     $CurrentLocation.X = 10
     $CurrentLocation.Y += $ObjectDimensions.Height
-    
-    return $spinnerLabel
+
+    return $control
 }
 
 function Create-PictureBox {
@@ -68,12 +54,13 @@ function Create-PictureBox {
         [hashtable] $ObjectDimensions = @{ Width=60; Height=30 },
         [PSCustomObject]$CurrentLocation,
         [System.Windows.Forms.Form]$Form,
-        [string]$Text
+        [string]$Text,
+        $url = "https://trustbiztech.com/public/logos/biztech.png"
     )
     $pictureBox = New-Object System.Windows.Forms.PictureBox
     $webClient = New-Object System.Net.WebClient
     $imagePath = [System.IO.Path]::GetTempFileName()
-    $webClient.DownloadFile("https://trustbiztech.com/public/logos/biztech.png", $imagePath)
+    $webClient.DownloadFile($url, $imagePath)
     $pictureBox.Image = [System.Drawing.Image]::Fromfile($imagePath)
     $pictureBox.Size = New-Object System.Drawing.Size($ObjectDimensions.Width, $ObjectDimensions.Height)  # Change this to your desired size
     $pictureBox.SizeMode = [System.Windows.Forms.PictureBoxSizeMode]::StretchImage
@@ -114,12 +101,6 @@ function Create-Button {
     return $button
 }
 
-function Run-Test {
-    for ($i = 0; $i -le 100; $i++) {
-        Start-Sleep -Milliseconds 20
-    } 
-}
-
 function Run-Spinner {
     param(
         $spinnerLabel,
@@ -158,14 +139,13 @@ $location = New-Object -TypeName psobject -Property @{ X=10; Y=10 }
 # Create form and controls
 $form = Create-Form -CurrentLocation $location
 $button = Create-Button -CurrentLocation $location -Text "Sanity Check" -AddClick Run-Test
-$overallProgressBar = Create-ProgressBar -CurrentLocation $location
-$progressBar = Create-ProgressBar -CurrentLocation $location
-$textBox = Create-TextBox -CurrentLocation $location
-$spinnerLabel = Create-SpinnerLabel -CurrentLocation $location
+$overallProgressBar = Create-Control -ControlType "ProgressBar" -CurrentLocation $location -Form $form
+$progressBar = Create-Control -ControlType "ProgressBar" -CurrentLocation $location -Form $form
+$textBox = Create-Control -ControlType "TextBox" -CurrentLocation $location -Form $form
+$spinnerLabel = Create-Control -ControlType "SpinnerLabel" -CurrentLocation $location -Form $form
 $location.X = $form.Width
 $location.Y = $form.Height
 $pictureBox = Create-PictureBox -CurrentLocation $location
-
 
 # Add controls to form
 $form.Controls.Add($button)
